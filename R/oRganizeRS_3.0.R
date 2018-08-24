@@ -2,6 +2,7 @@ oRganizeRS=function(
 										dir_projects
 										, dir_out
 										, rescan = F
+										, check = T  #ask before copy?
 										, copy = T
 										, cut = F
 										, templateRDS=c("c:/temp/template1.rds")
@@ -38,7 +39,97 @@ oRganizeRS=function(
 
 	}
 
+		#browser()
+
+	intro_folders=c(
+		",This is a template for moving lidar projects into a consistent format."
+		,",Column 'dir_old' is the current structure of the project."
+		,",Column 'dir_new1' is the default target folder."
+		,",Column 'dir_new2' is an alternative location inside of a 'misc' folder."
+		,",If you wish to use dir_new2 place an X (or any text) in 'use_dirnew2'."
+		,",You can manually updated dir_new1 if you don't like 'dir_new1' or 'dir_new2'."
+		)
+	intro_folders=c(intro_folders, rep("",10-length(intro_folders)))
+
+	intro_files=c("Please see the folder template! Do not change anything in this folder","","","","")
+
+	#write csv files and batch files to projects
+	for(i in 1:length(proj_templates)){
+
+		dfi = proj_templates[[i]][["folders"]]
+
+		if(nrow(dfi) > 0){
+
+			dfi_files = proj_templates[[i]][["files"]]
+			dir_i = proj_templates[[i]][["in_dir"]]
+			outi_folders = paste(dir_i,"\\","XXMOVE_FOLDER_TEMPLATEXX.CSV",sep="")
+			outi_files = paste(dir_i,"\\","XXMOVE_FILE_TEMPLATEXX.CSV",sep="")
+
+			dfi_folders=data.frame(dfi[,c(1:3)],use_dirnew2="",dfi[,c(4),drop=F])
+
+			#write introductions and templates
+			writeLines(intro_folders,con = outi_folders)
+			writeLines(intro_files,con = outi_files)
+			suppressWarnings(write.table(dfi_folders,outi_folders, append = T,row.names = F,col.names=T,sep=","))
+			suppressWarnings(write.table(dfi_files,outi_files, append = T,row.names = F,col.names=T,sep=","))
+
+		}
+
+	}
+
+
+
 	if(return_templates) return(proj_templates)
+
+}
+
+moveRS=function(dir=NA,copy=F,cut=F){
+
+	if(is.na(dir)) dir_in = choose.dir()
+	else dir_in = dir
+
+	if(copy){
+		if(cut){
+			cut=F
+			print("Cannot set 'cut = T' if 'copy = T', cut will revert to 'F'")
+			warning("Cannot set 'cut = T' if 'copy = T', cut will revert to 'F'")
+		}
+	}
+	if(cut){
+		do_cut = readline(prompt="Are you sure you want to 'cut' this project? File movement is permanent (y/n)")
+		if(tolower(do_cut) != "y"){
+			cut = F
+			copy = T
+		}
+	}
+
+	this_template = paste(dir_in,"\\","XXMOVETEMPLATEXX.csv")
+
+	if(!file.exists(this_template)){
+
+			dir_out = choose.dir(dir_in, caption = "Select folder")
+			oRganizeRS(dir_in,dir_out, rescan = T)
+			warning("Please review the template:",this_template,"then re-run moveRS")
+
+	}else{
+
+		template_in = read.csv(this_template,skip=5,header=T)
+
+		#test / fix primary target directory
+		swap = sapply(template_in[,3],function(x)nchar(x)>0)
+		template_in[,"temporary"] = NA
+		template_in[,"temporary"] = template_in[,1]
+		template_in[swap,1] = template_in[swap,3]
+
+		for(i in 1:nrow(template_in)){
+
+
+			if(copy) try(file.copy(template_in[i,1],template_in[i,2],recursive=T))
+			if(cut) try(file.move(template_in[i,1],template_in[i,2],recursive=T))
+
+		}
+
+	}
 
 }
 
@@ -201,7 +292,9 @@ oRganizeRS=function(
 	spl_template = split(df_template, df_template$type)
 	df_dirs_temp = rbind.fill(lapply(spl_template,.fn_temp_dirs))
 
-	return(list(df_template,df_dirs_temp))
+	if(nrow(df_template)==0) df_dirs_temp = df_template
+
+	return(list(files = df_template,folders = df_dirs_temp, in_dir = from_project_dir, out_dir = to_project_dir ))
 
 }
 
