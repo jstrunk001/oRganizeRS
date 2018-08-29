@@ -217,12 +217,12 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 	subdirs = c("las","laz","dtm_original","dtm_fusion","tile_vectors","original","projection")
 	subdirs_project = paste(to_project_dir,subdirs,sep="/")
 
-	df_template=data.frame(
-		type = ""
-		,dir_old = tolower(l_proj$subdirs_project)
-		,dirs_new1 = tolower(gsub(from_project_dir,to_original_dir,l_proj$subdirs_project))
-		,dirs_new2 = ""
-	)
+	# df_template=data.frame(
+	# 	type = ""
+	# 	,dir_old = tolower(l_proj$subdirs_project)
+	# 	,dirs_new1 = tolower(gsub(from_project_dir,to_original_dir,l_proj$subdirs_project))
+	# 	,dirs_new2 = ""
+	# )
 
 	l_types = list(
 		las = grep("[.]las.{0,1}$",l_proj$files_all,value=T,ignore.case=T)
@@ -244,39 +244,6 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 
 	df_template = read.csv(text="type,dir_old,dir_new1,dir_new2",stringsAsFactors=F,colClasses="character")
 
-	# special_assign = list(
-	# 	dtm_original = c("[.]tif$","[.]asc$","[.]img$","[.]tif$"))
-	# 	,original_metadata = c("[.]pdf$","[.]doc$","[.]docx$","[.]html$","[.]xls$","[.]xlsx$")
-	# )
-
-	.fn_assign1=function(
-		type
-		,dir_old
-		,dir_new
-		,subfolder
-		,folder_list
-		,type = c("file","folder")
-		){
-		if( length(folder_list) > 0 ){
-
-			folder_list_in = folder_list[order(nchar(folder_list))]
-			dir_new1 = .clean_path(paste(dir_new,subfolder,sep="/"))
-			dir_new2 = .clean_path(gsub(dir_old,paste(dir_new,"original",sep="/"),folder_list_in, fixed = T))
-
-			#only place first instance of file type in primary subfolder, otherwise put everything in "original" folder
-			df_temp_in = data.frame(
-				type=type
-								 ,dir_old=dir_old
-								 ,dir_new1=c(dir_new1[1],dir_new2[-1])
-								 ,dir_new2=c(dir_new2[1],dir_new1[-1])
-			)
-
-		}else 			df_temp_in = NULL
-
-		return( df_temp_in )
-
-	}
-
 	df_template = rbind.fill(
 		df_template
 		,.fn_assign1(type = ".las"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "las" ,folder_list = l_types$las)
@@ -286,101 +253,12 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 		,.fn_assign1(type = ".img"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "dtm_original" ,folder_list = l_types$img)
 		,.fn_assign1(type = ".asc"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "dtm_original" ,folder_list = l_types$asc)
 		,.fn_assign1(type = ".adf"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "dtm_original" ,folder_list = unique(dirname(l_types$adf)))
+		,.fn_assign1(type = ".doc"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "metafiles_original" ,folder_list = l_types$doc)
+		,.fn_assign1(type = ".docx"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "metafiles_original" ,folder_list = l_types$docx)
+		,.fn_assign1(type = ".pdf"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "metafiles_original" ,folder_list = l_types$pdf)
+		,.fn_assign1(type = ".html"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "metafiles_original" ,folder_list = l_types$html)
+		,.fn_assign1(type = "other"	,dir_old = from_project_dir ,dir_new = to_project_dir ,subfolder = "original" ,folder_list = l_types$others)
 	)
-	unique(dirname(l_types$adf))
-
-	browser()
-
-#first cut - look at individual files
-	if(length(l_folders$las) > 0){
-		df_template = rbind.fill(df_template
-					,data.frame(type=".las",dir_old=l_types$las
-											,dir_new1=gsub(from_project_dir,paste(to_project_dir,"las",sep="/"),l_types$las, fixed = T)
-											,dir_new2=gsub(from_project_dir,to_original_dir,l_types$las, fixed = T)
-											)
-					)
-	}
-	if(length(l_folders$laz) > 0){
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".laz",dir_old=l_types$laz
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"laz",sep="/"),l_types$laz, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$laz, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$dtm) > 0){
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".dtm",dir_old=l_types$dtm
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"dtm_fusion",sep="/"),l_types$dtm, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$dtm, fixed = T)
-														 )		)
-
-
-	}
-	if(length(l_folders$tif) > 0){
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".tif",dir_old=l_types$tif
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"dtm_original",sep="/"),l_types$tif, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$tif, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$img) > 0){
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".img",dir_old=l_types$img
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"dtm_original",sep="/"),l_types$img, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$img, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$asc) > 0){
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".asc",dir_old=l_types$asc
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"dtm_original",sep="/"),l_types$asc, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$asc, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$adf) > 0){
-		esri_files = unique(dirname(l_types$adf))
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".adf",dir_old=l_types$adf
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"dtm_original",sep="/"),esri_files, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,esri_files, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$doc) > 0){
-
-		doc_dirs = unique(dirname(l_types$doc))
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".doc",dir_old=l_types$doc
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"original_metafiles",sep="/"),l_types$doc, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$doc, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$pdf) > 0){
-
-		pdf_dirs = unique(dirname(l_types$pdf))
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".pdf",dir_old=l_types$pdf
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"original_metafiles",sep="/"),l_types$pdf, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$pdf, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$html) > 0){
-
-		html_files = unique(dirname(l_types$html))
-		df_template = rbind.fill(df_template
-														 ,data.frame(type=".html",dir_old=l_types$html
-														 						,dir_new1=gsub(from_project_dir,paste(to_project_dir,"original_metafiles",sep="/"),l_types$html, fixed = T)
-														 						,dir_new2=gsub(from_project_dir,to_original_dir,l_types$html, fixed = T)
-														 )		)
-	}
-	if(length(l_folders$other) > 0){
-
-		other_dirs = unique(dirname(l_types$others))
-		df_template = rbind.fill(df_template
-														 ,data.frame(type="other",dir_old=l_types$others
-														 						,dir_new1=gsub(from_project_dir,to_original_dir,l_types$others, fixed = T)
-														 						,dir_new2=""#gsub(from_project_dir,to_original_dir,l_types$others)
-														 )		)
-	}
 
 	#second cut - organize by folders, las and laz may be in same folder ...
 	spl_template = split(df_template, df_template$type)
@@ -392,24 +270,50 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 
 }
 
+.fn_assign1=function(
+	type
+	,dir_old
+	,dir_new
+	,subfolder
+	,folder_list
+){
+	if( length(folder_list) > 0 ){
+
+		folder_list_in = folder_list[order(nchar(folder_list))]
+		dir_new1 = .clean_path(paste(dir_new,subfolder,basename(folder_list_in),sep="/"))
+		dir_new2 = .clean_path(gsub(dir_old,paste(dir_new,"original",sep="/"),folder_list_in, fixed = T))
+
+		#only place first instance of file type in primary subfolder, otherwise put everything in "original" folder
+		df_temp_in = data.frame(
+			type=type
+			,dir_old = folder_list_in
+			,dir_new1 = dir_new1 #c(dir_new1[1],dir_new2[-1])
+			,dir_new2 = dir_new2 #c(dir_new2[1],dir_new1[-1])
+		)
+
+	}else 			df_temp_in = NULL
+
+	return( df_temp_in )
+
+}
+
 .fn_temp_dirs=function(df_tempi){
 
 	#get unique set of directories
 	dir_old_in = dirname(df_tempi$dir_old)
 	dup_dir = duplicated(dir_old_in)
 	df_tempi_unq =  df_tempi[!dup_dir,]
+	df_tempi_unq = df_tempi_unq[order(nchar(df_tempi_unq[,"dir_new1"])),]
 
 	#select first instance into template, set 2nd,3rd... instances into alternate "dir_new2" folder"
-	if(length(df_tempi_unq) > 0){
-		#if(sum(grepl(c(".las",".laz",".dtm",".tif",".adf",".img",".asc") , df_tempi_unq)) > 0){ #if grepl not really necessary
+	if(nrow(df_tempi_unq) > 1){
 			df_tempi_unq_a = df_tempi_unq
 			df_tempi_unq[-1,"dir_new1"] = df_tempi_unq_a[-1,"dir_new2"]
-			df_tempi_unq[-1,"dir_new1"] = df_tempi_unq_a[-1,"dir_new1"]
-		#}
+			df_tempi_unq[-1,"dir_new2"] = df_tempi_unq_a[-1,"dir_new1"]
 	}
 
 	#return directories only
-	df_tempi_unq[,-1] = apply(df_tempi_unq[,-1],2,dirname)
+	df_tempi_unq[,c("dir_new1","dir_new2")] = apply(df_tempi_unq[,c("dir_new1","dir_new2")],2,dirname)
 	df_tempi_unq
 
 }
@@ -446,9 +350,11 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 
 #external hdd
 
-if(T){
+if(F){
 	templates = oRganizeRS("d:\\temp\\test_dir\\","d:\\temp\\test_dir1\\", rescan = T)
 }
 if(F){
+	moveRS("D:\\temp\\test_dir\\New folder - Copy (3)")
 	moveRS("D:\\temp\\test_dir\\New folder - Copy (3) - Copy")
+
 }
