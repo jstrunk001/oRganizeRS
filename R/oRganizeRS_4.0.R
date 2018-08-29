@@ -1,8 +1,7 @@
-oRganizeRS=function(
+createTemplates=function(
 										dir_projects
 										, dir_out
 										, rescan = F
-										, check = T  #ask before copy?
 										, copy = T
 										, cut = F
 										, templateRDS=c("c:/temp/template1.rds")
@@ -313,7 +312,7 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 	}
 
 	#return directories only
-	df_tempi_unq[,c("dir_new1","dir_new2")] = apply(df_tempi_unq[,c("dir_new1","dir_new2")],2,dirname)
+	df_tempi_unq[,c("dir_old","dir_new1","dir_new2")] = apply(df_tempi_unq[,c("dir_old","dir_new1","dir_new2")],2,dirname)
 	df_tempi_unq
 
 }
@@ -350,8 +349,8 @@ moveRS=function(dir=NA,copy=T,cut=F,dir_out = NA){
 
 #external hdd
 
-if(F){
-	templates = oRganizeRS("d:\\temp\\test_dir\\","d:\\temp\\test_dir1\\", rescan = T)
+if(T){
+	createTemplates("d:\\temp\\test_dir\\","d:\\temp\\test_dir1\\", rescan = T)
 }
 if(F){
 	moveRS("D:\\temp\\test_dir\\New folder - Copy (3)")
